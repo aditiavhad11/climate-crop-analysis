@@ -13,7 +13,7 @@ CropAI is a Machine Learning–based web application that helps users:
 
 The system combines **Flask (backend)**, **Machine Learning (Random Forest & Linear Regression)**, and **interactive frontend (HTML, CSS, JS, Chart.js)**.
 
----
+
 
 ## 🎯 Features
 
@@ -91,7 +91,7 @@ The system combines **Flask (backend)**, **Machine Learning (Random Forest & Lin
 * MSE (Mean Squared Error)
 * RMSE
 
----
+
 
 ## 🛠️ Tech Stack
 
