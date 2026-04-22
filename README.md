@@ -27,7 +27,7 @@ The system combines **Flask (backend)**, **Machine Learning (Random Forest & Lin
   * Area
 * Uses **Random Forest Regressor**
 
----
+
 
 ### 🌱 2. Smart Crop Recommendation
 
@@ -41,7 +41,7 @@ The system combines **Flask (backend)**, **Machine Learning (Random Forest & Lin
   * ML prediction
   * Real dataset filtering
 
----
+
 
 ### 📊 3. Analytics Dashboard
 
@@ -50,7 +50,7 @@ The system combines **Flask (backend)**, **Machine Learning (Random Forest & Lin
 * State-based filtering
 * Built using **Chart.js**
 
----
+
 
 ### ⚖️ 4. Model Comparison
 
@@ -64,7 +64,7 @@ The system combines **Flask (backend)**, **Machine Learning (Random Forest & Lin
   * MSE (Mean Squared Error)
 * Highlights best model
 
----
+
 
 ### 📈 5. Forecasting
 
@@ -76,7 +76,7 @@ The system combines **Flask (backend)**, **Machine Learning (Random Forest & Lin
   * Predicted values
   * Confidence interval (upper/lower bounds)
 
----
+
 
 ## 🧠 Machine Learning
 
@@ -116,7 +116,7 @@ The system combines **Flask (backend)**, **Machine Learning (Random Forest & Lin
 * pandas
 * numpy
 
----
+
 
 ## 📁 Project Structure
 
@@ -145,7 +145,7 @@ CropAI/
 └── BDA DATASET.xlsx
 ```
 
----
+
 
 ## ⚙️ Installation & Setup
 
@@ -156,7 +156,7 @@ git clone https://github.com/your-username/cropai.git
 cd cropai
 ```
 
----
+
 
 ### 2️⃣ Install Dependencies
 
@@ -164,15 +164,12 @@ cd cropai
 pip install -r requirements.txt
 ```
 
----
-
 ### 3️⃣ Train Model
 
 ```
 python train_model.py
 ```
 
----
 
 ### 4️⃣ Run Application
 
@@ -180,7 +177,6 @@ python train_model.py
 python app.py
 ```
 
----
 
 ### 5️⃣ Open in Browser
 
@@ -188,7 +184,6 @@ python app.py
 http://127.0.0.1:5000
 ```
 
----
 
 ## 🔄 Working Flow
 
@@ -196,7 +191,6 @@ http://127.0.0.1:5000
 User Input → Frontend → API Call → Flask Backend → ML Model → Prediction → JSON Response → UI Display
 ```
 
----
 
 ## 📊 APIs Used
 
@@ -208,7 +202,7 @@ User Input → Frontend → API Call → Flask Backend → ML Model → Predicti
 | `/api/compare`   | Compare ML models         |
 | `/api/forecast`  | Predict future production |
 
----
+
 
 ## 💡 Key Highlights
 
@@ -218,7 +212,6 @@ User Input → Frontend → API Call → Flask Backend → ML Model → Predicti
 * Model comparison system
 * Forecasting with confidence interval
 
----
 
 ## ⚠️ Limitations
 
@@ -226,7 +219,6 @@ User Input → Frontend → API Call → Flask Backend → ML Model → Predicti
 * Forecasting uses simple trend method
 * Accuracy depends on dataset quality
 
----
 
 ## 🚀 Future Improvements
 
@@ -234,15 +226,6 @@ User Input → Frontend → API Call → Flask Backend → ML Model → Predicti
 * Use advanced time-series models (ARIMA, LSTM)
 * Improve recommendation accuracy
 * Deploy on cloud
-
----
-
-## 👨‍💻 Author
-
-**Aditi Avhad**
-B.Tech (Data Science / IT)
-
----
 
 ## ⭐ Conclusion
 
