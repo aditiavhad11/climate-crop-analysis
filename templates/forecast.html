@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Forecast — CropAI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Future <span>Forecast</span></h1>
+  <p>Predict crop production trends for the next 2–5 years.</p>
+</div>
+
+<div class="container">
+  <div class="card" style="max-width:960px;margin:0 auto;">
+    <!-- Controls -->
+    <div class="select-row" style="margin-bottom:28px;align-items:flex-end;gap:16px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:3;margin-bottom:0;">
+        <label>Crop</label>
+        <select class="form-control" id="fc-crop">
+          {% for c in crops %}<option value="{{ c }}" {% if c=='Soybean' %}selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="flex:3;margin-bottom:0;">
+        <label>State</label>
+        <select class="form-control" id="fc-state">
+          {% for s in states %}<option value="{{ s }}" {% if s=='MAHARASHTRA' %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="flex:2;margin-bottom:0;">
+        <label>Years Ahead</label>
+        <select class="form-control" id="fc-years">
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="fc-btn" onclick="runForecast()" style="flex-shrink:0;margin-bottom:0;">
+        <i class="fas fa-calendar-alt"></i> Forecast
+      </button>
+    </div>
+
+    <div class="loader" id="fc-loader"><div class="spinner"></div> Generating forecast...</div>
+
+    <!-- Chart -->
+    <div class="forecast-chart-wrap">
+      <canvas id="fc-chart"></canvas>
+    </div>
+
+    <!-- Legend -->
+    <div class="forecast-legend">
+      <div class="legend-item">
+        <div class="legend-dot green"></div>
+        <span>Historical &amp; Predicted</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot gold"></div>
+        <span>Confidence Interval</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot white"></div>
+        <span>2026 = Current Year</span>
+      </div>
+    </div>
+
+    <!-- Tooltip panel -->
+    <div id="fc-tooltip" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-top:20px;max-width:280px;">
+      <div id="fc-tt-year" style="font-weight:700;font-size:1rem;margin-bottom:8px;"></div>
+      <div id="fc-tt-upper" style="color:var(--gold);font-size:0.875rem;"></div>
+      <div id="fc-tt-lower" style="color:var(--gold);font-size:0.875rem;"></div>
+      <div id="fc-tt-prod"  style="color:var(--green);font-size:0.875rem;font-weight:600;"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let fcChart = null;
+
+async function runForecast() {
+  const btn = document.getElementById('fc-btn');
+  const loader = document.getElementById('fc-loader');
+  btn.classList.add('btn-loading'); loader.classList.add('show');
+
+  const crop  = document.getElementById('fc-crop').value;
+  const state = document.getElementById('fc-state').value;
+  const years = parseInt(document.getElementById('fc-years').value);
+
+  try {
+    const res = await apiPost('/api/forecast', {crop, state, years_ahead: years});
+    if (res.error) { showToast(res.error, 'fa-exclamation-circle'); return; }
+    drawForecastChart(res.historical, res.forecast, res.current_year);
+    showToast('Forecast generated!');
+  } catch(e) {
+    showToast('Forecast failed', 'fa-exclamation-circle');
+  } finally {
+    btn.classList.remove('btn-loading');
+    loader.classList.remove('show');
+  }
+}
+
+function drawForecastChart(historical, forecast, currentYear) {
+  const ctx = document.getElementById('fc-chart').getContext('2d');
+  if (fcChart) fcChart.destroy();
+
+  // Build combined data
+  const allYears = [...new Set([...historical.map(h => h.year), ...forecast.map(f => f.year)])].sort();
+  const histMap  = Object.fromEntries(historical.map(h => [h.year, h.production]));
+  const fcMap    = Object.fromEntries(forecast.map(f => [f.year, f]));
+
+  const mainData  = allYears.map(y => histMap[y] ?? (fcMap[y]?.production ?? null));
+  const upperData = allYears.map(y => fcMap[y]?.upper ?? null);
+  const lowerData = allYears.map(y => fcMap[y]?.lower ?? null);
+
+  fcChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: allYears,
+      datasets: [
+        {
+          label: 'Historical & Predicted',
+          data: mainData,
+          borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)',
+          borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#22c55e',
+          fill: true, tension: 0.4,
+        },
+        {
+          label: 'Upper Bound',
+          data: upperData,
+          borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)',
+          borderWidth: 1.5, borderDash: [6,4], pointRadius: 3, pointBackgroundColor: '#f59e0b',
+          fill: '+1', tension: 0.4,
+        },
+        {
+          label: 'Lower Bound',
+          data: lowerData,
+          borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)',
+          borderWidth: 1.5, borderDash: [6,4], pointRadius: 3, pointBackgroundColor: '#f59e0b',
+          fill: false, tension: 0.4,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(17,26,18,0.95)',
+          borderColor: '#2a3f2a', borderWidth: 1,
+          titleColor: '#f0f5f0', bodyColor: '#8fa38f',
+          padding: 12, cornerRadius: 10,
+          callbacks: {
+            afterBody: (items) => {
+              const yr = items[0]?.label;
+              if (yr == currentYear) return ['', '⬤ Current Year'];
+            }
+          }
+        },
+        annotation: {}
+      },
+      scales: {
+        x: { grid: { color: '#2a3f2a' } },
+        y: { grid: { color: '#2a3f2a' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// Auto-run on page load
+window.addEventListener('DOMContentLoaded', runForecast);
+</script>
+{% endblock %}

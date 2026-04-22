@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Recommend — CropAI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Smart Crop <span>Recommendation</span></h1>
+  <p>Find the best crops for your location, rainfall, and area conditions.</p>
+</div>
+
+<div class="container">
+  <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+
+    <!-- LEFT SIDE -->
+    <div class="left-col">
+      <div class="card" style="height:100%;">
+
+        <div class="form-group">
+          <label>State</label>
+          <select class="form-control" id="rec-state"></select>
+        </div>
+
+        <div class="form-group">
+          <label>District</label>
+          <select class="form-control" id="rec-district"></select>
+        </div>
+
+        <div class="form-group">
+          <label>Rainfall (mm)</label>
+          <input type="number" class="form-control" id="rec-rain" value="500">
+        </div>
+
+        <div class="form-group">
+          <label>Area (hectares)</label>
+          <input type="number" class="form-control" id="rec-area" value="50">
+        </div>
+
+        <button class="btn btn-primary btn-full" onclick="runRecommend()">
+          Get Recommendations
+        </button>
+
+        <div id="rec-loader" style="display:none;margin-top:10px;font-size:0.85rem;color:#8fa38f;">
+          Finding best crops...
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div>
+      <div id="rec-results" class="recommend-list" style="display:flex;flex-direction:column;gap:12px;">
+
+        <div style="text-align:center;color:#8fa38f;font-size:0.9rem;padding:20px;">
+          Select your inputs and click button
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+const STATE_DISTRICTS = {{ state_districts | tojson }};
+const STATES = {{ states | tojson }};
+
+// ================= LOAD STATES =================
+function loadStates() {
+  const stateSelect = document.getElementById("rec-state");
+
+  stateSelect.innerHTML = STATES.map(s =>
+    `<option value="${s}">${s}</option>`
+  ).join("");
+
+  loadDistricts();
+}
+
+// ================= LOAD DISTRICTS =================
+function loadDistricts() {
+  const state = document.getElementById("rec-state").value;
+  const districts = STATE_DISTRICTS[state] || [];
+
+  document.getElementById("rec-district").innerHTML =
+    districts.map(d => `<option value="${d}">${d}</option>`).join("");
+}
+
+// ================= RECOMMEND =================
+async function runRecommend() {
+
+  const loader = document.getElementById("rec-loader");
+  loader.style.display = "block";
+
+  const state = document.getElementById("rec-state").value;
+  const district = document.getElementById("rec-district").value;
+  const rain = parseFloat(document.getElementById("rec-rain").value);
+  const area = parseFloat(document.getElementById("rec-area").value);
+
+  try {
+
+    const response = await fetch("/api/recommend", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        state: state,
+        district: district,
+        rainfall: rain,
+        area: area
+      })
+    });
+
+    const data = await response.json();
+    console.log("API RESPONSE:", data);
+
+    if (!data.recommendations || data.recommendations.length === 0) {
+      document.getElementById("rec-results").innerHTML =
+        "<p style='text-align:center;color:#aaa;'>No recommendations found</p>";
+      return;
+    }
+
+    renderRecommendations(data.recommendations);
+
+  } catch (error) {
+    console.error(error);
+    alert("Recommendation failed");
+  }
+
+  loader.style.display = "none";
+}
+
+// ================= RENDER =================
+function renderRecommendations(recs) {
+
+  const container = document.getElementById("rec-results");
+
+  container.innerHTML = recs.map((r, i) => {
+
+    const pct = r.percentage || 80;
+
+    return `
+      <div style="
+        background:#0f1f16;
+        padding:14px;
+        border-radius:10px;
+        border:1px solid #1f3a2b;
+        font-size:0.9rem;
+      ">
+
+        <h3 style="color:#2ecc71;font-size:1rem;margin-bottom:6px;">
+          ${i+1}. ${r.crop}
+        </h3>
+
+        <p style="color:#ccc;font-size:0.85rem;margin-bottom:8px;">
+          Yield: ${Number(r.yield).toFixed(2)} tonnes
+        </p>
+
+        <div style="background:#1f3a2b;height:6px;border-radius:10px;margin-bottom:6px;">
+          <div style="
+            width:${pct}%;
+            height:6px;
+            background:#2ecc71;
+            border-radius:10px;
+          "></div>
+        </div>
+
+        <p style="color:#aaa;font-size:0.8rem;">
+          ${pct}% suitability
+        </p>
+
+      </div>
+    `;
+  }).join("");
+}
+
+// ================= INIT =================
+document.addEventListener("DOMContentLoaded", () => {
+  loadStates();
+
+  document.getElementById("rec-state")
+    .addEventListener("change", loadDistricts);
+});
+
+</script>
+{% endblock %}

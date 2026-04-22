@@ -1,0 +1,170 @@
+{% extends "base.html" %} {% block title %}Compare — CropAI{% endblock %} {%
+block content %}
+<div class="page-header">
+  <h1>Model <span>Comparison</span></h1>
+  <p>Compare Random Forest vs Linear Regression performance.</p>
+</div>
+
+<div class="container">
+  <div class="card" style="max-width: 900px; margin: 0 auto">
+    <!-- Input row -->
+    <div
+      class="select-row"
+      style="margin-bottom: 24px; align-items: flex-end; gap: 16px"
+    >
+      <div class="form-group" style="flex: 2; margin-bottom: 0">
+        <label>Crop</label>
+        <select class="form-control" id="cmp-crop">
+          {% for c in crops %}
+          <option value="{{ c }}" {% if c == "Wheat" %}selected{% endif %}>
+            {{ c }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="flex: 1; margin-bottom: 0">
+        <label>Rainfall (mm)</label>
+        <input type="number" class="form-control" id="cmp-rain" value="800" />
+      </div>
+      <div class="form-group" style="flex: 1; margin-bottom: 0">
+        <label>Area (ha)</label>
+        <input type="number" class="form-control" id="cmp-area" value="100" />
+      </div>
+      <button
+        class="btn btn-primary"
+        id="cmp-btn"
+        onclick="runCompare()"
+        style="flex-shrink: 0; margin-bottom: 0"
+      >
+        <i class="fas fa-code-compare"></i> Compare
+      </button>
+    </div>
+
+    <div class="loader" id="cmp-loader">
+      <div class="spinner"></div>
+      Running models...
+    </div>
+
+    <!-- Charts -->
+    <div
+      style="
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      "
+      id="cmp-charts"
+    >
+      <div>
+        <div class="chart-title">
+          Mean Squared Error (MSE) — Lower is better
+        </div>
+        <div class="chart-wrap"><canvas id="mse-chart"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-title">R² Score — Higher is better</div>
+        <div class="chart-wrap"><canvas id="r2-chart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="compare-result" id="cmp-cards">
+      <div class="compare-card rf" id="rf-card">
+        <div class="compare-card-title">Random Forest</div>
+        <div class="compare-metric" id="rf-mse">{{ meta.rf_mse }}</div>
+        <div class="compare-sub">MSE (log-scale)</div>
+        <div class="compare-metric" style="margin-top: 12px" id="rf-r2">
+          {{ meta.rf_r2 }}
+        </div>
+        <div class="compare-sub">R² Score</div>
+      </div>
+      <div class="compare-card lr" id="lr-card">
+        <div class="compare-card-title">Linear Regression</div>
+        <div class="compare-metric" id="lr-mse">{{ meta.lr_mse }}</div>
+        <div class="compare-sub">MSE (log-scale)</div>
+        <div class="compare-metric" style="margin-top: 12px" id="lr-r2">
+          {{ meta.lr_r2 }}
+        </div>
+        <div class="compare-sub">R² Score</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  let mseChart = null, r2Chart = null;
+  const RF_R2  = {{ meta.rf_r2 }};
+  const LR_R2  = {{ meta.lr_r2 }};
+  const RF_MSE = {{ meta.rf_mse }};
+  const LR_MSE = {{ meta.lr_mse }};
+
+  function drawCharts(rfMse, lrMse, rfR2, lrR2) {
+    const mseCtx = document.getElementById('mse-chart').getContext('2d');
+    const r2Ctx  = document.getElementById('r2-chart').getContext('2d');
+    if (mseChart) mseChart.destroy();
+    if (r2Chart)  r2Chart.destroy();
+
+    const baseOpts = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: '#2a3f2a' } }, y: { grid: { color: '#2a3f2a' }, beginAtZero: true } }
+    };
+
+    mseChart = new Chart(mseCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Random Forest', 'Linear Regression'],
+        datasets: [{ data: [rfMse, lrMse], backgroundColor: ['rgba(34,197,94,0.7)','rgba(245,158,11,0.7)'], borderRadius: 8, borderSkipped: false }]
+      },
+      options: { ...baseOpts }
+    });
+
+    r2Chart = new Chart(r2Ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Random Forest', 'Linear Regression'],
+        datasets: [{ data: [rfR2, lrR2], backgroundColor: ['rgba(34,197,94,0.7)','rgba(245,158,11,0.7)'], borderRadius: 8, borderSkipped: false }]
+      },
+      options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, max: 1 } } }
+    });
+  }
+
+  async function runCompare() {
+    const btn = document.getElementById('cmp-btn');
+    const loader = document.getElementById('cmp-loader');
+    btn.classList.add('btn-loading'); loader.classList.add('show');
+
+    const crop = document.getElementById('cmp-crop').value;
+    const rain = parseFloat(document.getElementById('cmp-rain').value);
+    const area = parseFloat(document.getElementById('cmp-area').value);
+
+    try {
+      const res = await fetch('/api/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({crop, rainfall: rain, area})
+    }).then(r => r.json());
+      document.getElementById('rf-mse').textContent = res.rf.mse.toFixed(4);
+      document.getElementById('rf-r2').textContent  = res.rf.r2.toFixed(4);
+      document.getElementById('lr-mse').textContent = res.lr.mse.toFixed(4);
+      document.getElementById('lr-r2').textContent  = res.lr.r2.toFixed(4);
+
+      // Highlight winner
+      const rfWins = res.rf.r2 > res.lr.r2;
+      document.getElementById('rf-card').classList.toggle('winner', rfWins);
+      document.getElementById('lr-card').classList.toggle('winner', !rfWins);
+
+      drawCharts(res.rf.mse, res.lr.mse, res.rf.r2, res.lr.r2);
+      showToast(`Best model: ${rfWins ? 'Random Forest' : 'Linear Regression'}`);
+    } catch(e) {
+      showToast('Comparison failed', 'fa-exclamation-circle');
+    } finally {
+      btn.classList.remove('btn-loading');
+      loader.classList.remove('show');
+    }
+  }
+
+  // Draw initial charts on load
+  drawCharts(RF_MSE, LR_MSE, RF_R2, LR_R2);
+</script>
+{% endblock %}

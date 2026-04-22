@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CropAI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="fas fa-chart-pie" style="font-size:1.5rem;margin-right:10px;color:var(--green)"></i>Analytics <span>Dashboard</span></h1>
+  <p>Visual overview of crop distribution and production metrics.</p>
+</div>
+
+<div class="container">
+  <div class="dashboard-grid">
+
+    <div class="dash-card">
+      <div class="dash-card-title">
+        <h3>Crop Distribution</h3>
+        <select class="select-filter" id="dash-state" onchange="loadDashboard()">
+          {% for s in states %}
+          <option value="{{ s }}" {% if s=='MAHARASHTRA' %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="donut-wrap">
+        <canvas id="donut-chart"></canvas>
+      </div>
+
+      <div id="donut-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:center;font-size:0.75rem;color:var(--text2);">
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-title">
+        <h3 id="bar-title">Top Crops by Production (100 ha, 800mm rain)</h3>
+      </div>
+      <div class="chart-wrap" style="height:280px;">
+        <canvas id="bar-chart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="stats-grid stagger">
+    <div class="stat-card"><div class="stat-icon">🌾</div><div class="stat-number">15</div><div class="stat-label">Total Crops</div></div>
+    <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-number">28</div><div class="stat-label">States</div></div>
+    <div class="stat-card"><div class="stat-icon">☀️</div><div class="stat-number">6</div><div class="stat-label">Seasons</div></div>
+    <div class="stat-card"><div class="stat-icon">🤖</div><div class="stat-number">2</div><div class="stat-label">ML Models</div></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+let donutChart = null, barChart = null;
+
+// 🔥 BASE COLORS
+const BASE_COLORS = [
+  '#22c55e','#f59e0b','#3b82f6','#8b5cf6',
+  '#06b6d4','#ec4899','#f97316','#14b8a6'
+];
+
+// 🔥 GLOBAL MAP (same color per crop)
+let cropColorMap = {};
+
+async function loadDashboard() {
+
+  const state = document.getElementById('dash-state').value;
+
+  try {
+    const response = await fetch('/api/dashboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: state })
+    });
+
+    const res = await response.json();
+
+    console.log("DASHBOARD DATA:", res);
+
+    if (!res.crop_production || Object.keys(res.crop_production).length === 0) {
+      console.warn("No data for state:", state);
+      return;
+    }
+
+    drawDonut(res.crop_production, state);
+    drawBar(res.crop_production, state);
+
+  } catch(e) {
+    console.error("Dashboard error:", e);
+  }
+}
+
+function drawDonut(data, state) {
+
+  const ctx = document.getElementById('donut-chart').getContext('2d');
+  if (donutChart) donutChart.destroy();
+
+  const labels = Object.keys(data);
+  const values = Object.values(data);
+
+  // 🔥 Assign fixed color per crop
+  labels.forEach((crop, i) => {
+    if (!cropColorMap[crop]) {
+      cropColorMap[crop] = BASE_COLORS[i % BASE_COLORS.length];
+    }
+  });
+
+  const colors = labels.map(crop => cropColorMap[crop]);
+
+  donutChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: '#0d120e',
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+
+  const legend = document.getElementById('donut-legend');
+
+  legend.innerHTML = labels.map((l,i) => `
+    <span style="display:inline-flex;align-items:center;gap:5px;">
+      <span style="width:10px;height:10px;border-radius:50%;background:${colors[i]};"></span>
+      ${l}
+    </span>
+  `).join('');
+}
+
+function drawBar(data, state) {
+
+  const ctx = document.getElementById('bar-chart').getContext('2d');
+  if (barChart) barChart.destroy();
+
+  const sorted = Object.entries(data).sort((a,b) => b[1]-a[1]);
+
+  const labels = sorted.map(e => e[0]);
+  const values = sorted.map(e => e[1]);
+
+  // 🔥 Use SAME color mapping
+  const colors = labels.map(crop => {
+    if (!cropColorMap[crop]) {
+      cropColorMap[crop] = BASE_COLORS[Object.keys(cropColorMap).length % BASE_COLORS.length];
+    }
+    return cropColorMap[crop];
+  });
+
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// INIT
+window.addEventListener('DOMContentLoaded', loadDashboard);
+
+</script>
+{% endblock %}

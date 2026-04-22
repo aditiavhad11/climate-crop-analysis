@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}CropAI — Climate Change Impact Analyzer{% endblock %}
+{% block content %}
+
+<!-- ── HERO ─────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-bg-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      <i class="fas fa-microchip" style="color:var(--green);font-size:0.8rem"></i>
+      Powered by Machine Learning
+    </div>
+    <h1>Climate Change Impact<br><span>Analyzer on Crops</span></h1>
+    <p>Predict crop production, discover optimal crops for your region, and forecast future yields — all powered by advanced ML models.</p>
+    <div class="hero-btns">
+      <a href="/predict" class="btn btn-primary"><i class="fas fa-seedling"></i> Start Predicting</a>
+      <a href="/dashboard" class="btn-outline"><i class="fas fa-chart-bar"></i> View Dashboard</a>
+    </div>
+    <div class="hero-stats stagger">
+      <div class="hero-stat">
+        <span class="hero-stat-num">15+</span>
+        <span class="hero-stat-label">Crops Analyzed</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">28</span>
+        <span class="hero-stat-label">States Covered</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">2</span>
+        <span class="hero-stat-label">ML Models</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ─────────────────────────────────────────────────────── -->
+<section class="features">
+  <div class="container">
+    <h2 class="section-title" style="text-align:center">What <span>CropAI</span> Can Do</h2>
+    <div class="features-grid stagger">
+      <a href="/predict" class="feature-card">
+        <div class="feature-icon fi-green"><i class="fas fa-chart-line"></i></div>
+        <h3>Crop Production Prediction</h3>
+        <p>Enter crop type, season, rainfall, and area to get precise ML-powered production forecasts.</p>
+      </a>
+      <a href="/recommend" class="feature-card">
+        <div class="feature-icon fi-gold"><i class="fas fa-star"></i></div>
+        <h3>Smart Crop Recommendation</h3>
+        <p>Discover the top 5 most suitable crops for your location based on climate and soil conditions.</p>
+      </a>
+      <a href="/compare" class="feature-card">
+        <div class="feature-icon fi-blue"><i class="fas fa-balance-scale"></i></div>
+        <h3>Model Comparison</h3>
+        <p>Compare Random Forest vs Linear Regression performance with R² scores and MSE metrics.</p>
+      </a>
+      <a href="/forecast" class="feature-card">
+        <div class="feature-icon fi-purple"><i class="fas fa-calendar-alt"></i></div>
+        <h3>Future Forecast</h3>
+        <p>Project crop production trends 2–5 years ahead with confidence intervals based on historical data.</p>
+      </a>
+      <a href="/dashboard" class="feature-card">
+        <div class="feature-icon fi-teal"><i class="fas fa-tachometer-alt"></i></div>
+        <h3>Analytics Dashboard</h3>
+        <p>Visual overview of crop distributions and production metrics across states and seasons.</p>
+      </a>
+      <div class="feature-card">
+        <div class="feature-icon fi-red"><i class="fas fa-database"></i></div>
+        <h3>Rich Dataset</h3>
+        <p>Backed by 250,000+ agricultural records spanning 28 states and 30 years of crop data.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

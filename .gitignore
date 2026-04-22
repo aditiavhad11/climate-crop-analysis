@@ -1,0 +1,4 @@
+models/
+*.pkl
+*.xlsx
+__pycache__/
